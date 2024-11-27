@@ -4,3 +4,4 @@ DA_design/sim/InstructionMem.mem
 /DA_design/sim/obj_dir
 /DA_design/sim/test
 DA_design/sim/wave.fst
+*.gtkw

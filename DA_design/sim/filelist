@@ -1,3 +1,4 @@
 -y ../src/blocks
+-y ../src/branch
 
-../src/Pipelined_top.v
+../src/Pipelined_always_taken.v

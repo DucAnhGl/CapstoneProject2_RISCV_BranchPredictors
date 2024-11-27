@@ -11,7 +11,9 @@ VERILATOR = verilator
 VERILATOR_COV = verilator_coverage
 
 ### LINT FLAGS
-LINT_FLAGS = -Wall --lint-only -sv
+LINT_FLAGS += --unroll-stmts 99999
+LINT_FLAGS += --unroll-count 99999
+LINT_FLAGS += -Wall --lint-only -sv
 
 ### VERILATE FLAGS
 # Generate C++ in executable form
@@ -24,6 +26,9 @@ VERILATOR_FLAGS += -O3 -CFLAGS -DCOVERAGE
 VERILATOR_FLAGS += -Wall
 #Disable all style warnings
 VERILATOR_FLAGS += -Wno-style
+# Extend allowed loop body size
+VERILATOR_FLAGS += --unroll-stmts 99999
+VERILATOR_FLAGS += --unroll-count 99999
 # Enable assertion
 VERILATOR_FLAGS += --assert
 # Make waveforms
@@ -78,6 +83,6 @@ all:
 
 .PHONY: hex
 hex:
-	riscv32-unknown-elf-as -o test/out.o ../../programs/bubble_sort.asm
+	riscv32-unknown-elf-as -o test/out.o ../../programs/test_program.asm
 	riscv32-unknown-elf-objcopy -O verilog test/out.o InstructionMem.mem
 	riscv32-unknown-elf-objdump -d test/out.o > test/output.asm

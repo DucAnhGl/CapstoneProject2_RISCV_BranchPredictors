@@ -6,7 +6,7 @@ module top
   input logic  rst_i    
 );
 
-  Pipelined_top topdesign (
+  Pipelined_always_taken topdesign (
     .clk_i (clk_i),
     .rst_i (rst_i)
   );

@@ -1,7 +1,9 @@
-module Pipelined_top (
+module Pipelined_always_taken (
     input clk_i,
     input rst_i
 );
+    //Local params
+    localparam INDEX_WIDTH = 12;
 
     ///////////////////// Control signals////////////////////////
     ///// ID stage
@@ -22,11 +24,17 @@ module Pipelined_top (
 
     //////////////////// Datapath signals ///////////////////////
     // IF stage signals
-    wire [31:0] IF_CurrentPC, IF_PCplus4, IF_NextPC, IF_Instr;
-    wire        IF_IFIDFlush, IF_IDEXFlush;       
+    wire [31:0]                   IF_CurrentPC, IF_PCplus4, IF_NextPC, IF_Instr;
+    wire                          IF_IFIDFlush, IF_IDEXFlush;
+    wire [(INDEX_WIDTH-1):0]      IF_btb_rd_index;
+    wire [(32-INDEX_WIDTH-2)-1:0] IF_PC_tag;
+    wire                          IF_btb_hit;
+    wire [31:0]                   IF_btb_target;
+    wire [1:0]                    IF_PCnext_sel;
+    wire                          IF_flush;       
 
     // ID stage signals
-    reg  [31:0] IFID_Instr, IFID_CurrentPC;
+    reg  [31:0] IFID_Instr, IFID_CurrentPC, IFID_PCplus4;
     wire [4:0]  IFID_Rs1, IFID_Rs2, IFID_Rd;
     wire [6:0]  IFID_Funct7;
     wire [2:0]  IFID_Funct3;
@@ -35,6 +43,7 @@ module Pipelined_top (
     wire        ID_HDU_IFID_Write, ID_HDU_PC_Write; // Write-enable signals for IFID reg and PC
     wire [1:0]  ID_FrwD, ID_FrwE, ID_FrwF;
     wire [31:0] ID_BrBase_value, ID_BrBase_from_reg;
+    reg         IFID_btb_hit;
 
     reg         IFID_Flush;
     wire        ID_FlushMuxSel;
@@ -53,7 +62,7 @@ module Pipelined_top (
 
     // EX stage signals
     reg  [4:0]  IDEX_Rs1, IDEX_Rs2, IDEX_Rd;
-    reg  [31:0] IDEX_CurrentPC, IDEX_ReadData1, IDEX_ReadData2, IDEX_Imm; 
+    reg  [31:0] IDEX_CurrentPC, IDEX_PCplus4, IDEX_ReadData1, IDEX_ReadData2, IDEX_Imm; 
     reg  [2:0]  IDEX_Funct3;
     reg  [6:0]  IDEX_Funct7;
     wire [31:0] EX_ALU_operandA, EX_ALU_operandB, EX_ALU_result, EX_MemWrData;
@@ -62,6 +71,11 @@ module Pipelined_top (
     reg         IDEX_flag;
     wire        IDEX_True_Br_Decision;
     reg  [31:0] IDEX_BrAddr;
+    reg         IDEX_btb_hit;
+    wire        EX_is_jmp;
+    wire [(INDEX_WIDTH-1):0]      IDEX_btb_wr_index;
+    wire [(32-INDEX_WIDTH-2)-1:0] IDEX_btb_wr_tag;
+    
     
     // MEM stage signals
     reg  [31:0]  EXMEM_ALU_result, EXMEM_MemWrData; 
@@ -92,9 +106,37 @@ module Pipelined_top (
         .Sum_o (IF_PCplus4)
     );
 
-    assign IF_NextPC    = (!IDEX_True_Br_Decision) ? IF_PCplus4 : IDEX_BrAddr;
-    assign IF_IFIDFlush = IDEX_True_Br_Decision;
-    assign IF_IDEXFlush = IDEX_True_Br_Decision;
+    always_taken_predictor #(
+        .INDEX_WIDTH (INDEX_WIDTH)
+    ) always_taken_predictor_inst (
+        .clk_i                 (clk_i),
+        .rst_i                 (rst_i),
+        .IF_PC_tag_i           (IF_PC_tag),              
+        .IF_btb_rd_index_i     (IF_btb_rd_index),
+        .EXMEM_btb_wr_index_i  (IDEX_btb_wr_index),
+        .EXMEM_btb_wr_tag_i    (IDEX_btb_wr_tag),  
+        .EXMEM_btb_wr_target_i (IDEX_BrAddr),
+        .EXMEM_btb_hit_i       (IDEX_btb_hit),    
+        .EXMEM_br_decision_i   (IDEX_True_Br_Decision),
+        .EXMEM_is_jmp_i        (EX_is_jmp),  
+        
+        .IF_btb_hit_o          (IF_btb_hit),        
+        .IF_PCnext_sel_o       (IF_PCnext_sel),       
+        .IF_btb_rd_target_o    (IF_btb_target),
+        .IF_flush_o            (IF_flush)
+    );
+
+    assign IF_btb_rd_index = IF_CurrentPC[(INDEX_WIDTH+1):2];
+    assign IF_PC_tag       = IF_CurrentPC[31:(INDEX_WIDTH+2)];
+
+    assign IF_NextPC    = (IF_PCnext_sel == 2'b00) ? IF_PCplus4    : 
+                          (IF_PCnext_sel == 2'b01) ? IDEX_PCplus4  :
+                          (IF_PCnext_sel == 2'b10) ? IF_btb_target :
+                                                     IDEX_BrAddr;
+
+    // Flush for branch mispredict penalty
+    assign IF_IFIDFlush = IF_flush;
+    assign IF_IDEXFlush = IF_flush;
 
     InstructionMem Imem_inst (
         .PC_i          (IF_CurrentPC),
@@ -105,11 +147,15 @@ module Pipelined_top (
     always @(posedge clk_i or posedge rst_i) begin
         if (rst_i) begin
             IFID_Instr     <= 32'h0000_0000;
-            IFID_CurrentPC <= 32'b0000_0000;
+            IFID_CurrentPC <= 32'h0000_0000;
+            IFID_PCplus4   <= 32'h0000_0000;
+            IFID_btb_hit   <= 1'b0;
         end else begin
             if (ID_HDU_IFID_Write) begin
                 IFID_Instr     <= IF_Instr;
                 IFID_CurrentPC <= IF_CurrentPC;
+                IFID_PCplus4   <= IF_PCplus4;
+                IFID_btb_hit   <= IF_btb_hit;
             end
         end
     end
@@ -254,9 +300,10 @@ module Pipelined_top (
             IDEX_Rs1              <= 5'b00000;
             IDEX_Rs2              <= 5'b00000;
             IDEX_Rd               <= 5'b00000;
-            //IDEX_True_Br_Decision <= 1'b0;
             IDEX_flag             <= 1'b0;
-            IDEX_BrAddr           <= 32'h0000_0000; 
+            IDEX_BrAddr           <= 32'h0000_0000;
+            IDEX_PCplus4          <= 32'h0000_0000;
+            IDEX_btb_hit          <= 1'b0;
         end else begin
             IDEX_CurrentPC        <= IFID_CurrentPC;
             IDEX_ReadData1        <= ID_ReadData1;
@@ -267,9 +314,10 @@ module Pipelined_top (
             IDEX_Rs1              <= IFID_Rs1;
             IDEX_Rs2              <= IFID_Rs2;
             IDEX_Rd               <= IFID_Rd;
-            //IDEX_True_Br_Decision <= ID_True_Br_Decision;
             IDEX_flag             <= ID_flag;
             IDEX_BrAddr           <= ID_BrAddr;
+            IDEX_PCplus4          <= IFID_PCplus4;
+            IDEX_btb_hit          <= IFID_btb_hit;
         end
     end
 
@@ -343,13 +391,18 @@ module Pipelined_top (
 
     assign EX_MemWrData = EX_frwB_mux_out;
 
+    assign EX_is_jmp = IDEX_BrEn | IDEX_UncBr; 
+
     assign IDEX_True_Br_Decision = IDEX_UncBr | (IDEX_BrEn & IDEX_flag); // Branch decision logic
+
+    assign IDEX_btb_wr_index = IDEX_CurrentPC[(INDEX_WIDTH+1):2];
+    assign IDEX_btb_wr_tag   = IDEX_CurrentPC[31:(INDEX_WIDTH+2)];
 
     // EXMEM Datapath pipeline registers: async reset
     always @(posedge clk_i or posedge rst_i) begin
         if (rst_i) begin
             EXMEM_ALU_result <= 32'h0000_0000;
-            EXMEM_Rd         <= 5'b00000;
+            EXMEM_Rd         <= 5'b0_0000;
             EXMEM_MemWrData  <= 32'h0000_0000;
 
         end else begin
