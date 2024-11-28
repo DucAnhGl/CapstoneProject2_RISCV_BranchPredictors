@@ -7,7 +7,7 @@ module pht #(
     input  logic                     br_taken_i,         // The true branch decision, used to decide the updating of pht
     input  logic [(INDEX_WIDTH-1):0] rd_index_i,         // The index of prediction bit to read out
 
-    output logic br_prediction_o                         // The prediction read bit
+    output logic                     br_prediction_o     // The prediction read bit
 );  
 
     localparam TABLE_SIZE = 2**(INDEX_WIDTH);
@@ -23,15 +23,15 @@ module pht #(
     always_ff @(posedge clk_i or posedge rst_i) begin
         if (rst_i) begin
             for (i=0; i<TABLE_SIZE; i=i+1) begin
-                pht_table[i] <= STRONGLY_NOT_TAKEN //Initial state is strongly not taken
+                pht_table[i] <= STRONGLY_NOT_TAKEN; //Initial state is strongly not taken
             end
         end else begin
             if (update_en_i) begin
-                case (pht[update_index_i])
-                    STRONGLY_NOT_TAKEN: pht[update_index_i] <= br_taken_i ? WEAKLY_NOT_TAKEN : STRONGLY_NOT_TAKEN;
-                    WEAKLY_NOT_TAKEN  : pht[update_index_i] <= br_taken_i ? WEAKLY_TAKEN     : STRONGLY_NOT_TAKEN;
-                    WEAKLY_TAKEN      : pht[update_index_i] <= br_taken_i ? STRONGLY_TAKEN   : WEAKLY_NOT_TAKEN;
-                    STRONGLY_TAKEN    : pht[update_index_i] <= br_taken_i ? STRONGLY_TAKEN   : WEAKLY_TAKEN;
+                case (pht_table[update_index_i])
+                    STRONGLY_NOT_TAKEN: pht_table[update_index_i] <= br_taken_i ? WEAKLY_NOT_TAKEN : STRONGLY_NOT_TAKEN;
+                    WEAKLY_NOT_TAKEN  : pht_table[update_index_i] <= br_taken_i ? WEAKLY_TAKEN     : STRONGLY_NOT_TAKEN;
+                    WEAKLY_TAKEN      : pht_table[update_index_i] <= br_taken_i ? STRONGLY_TAKEN   : WEAKLY_NOT_TAKEN;
+                    STRONGLY_TAKEN    : pht_table[update_index_i] <= br_taken_i ? STRONGLY_TAKEN   : WEAKLY_TAKEN;
                 endcase
             end
         end

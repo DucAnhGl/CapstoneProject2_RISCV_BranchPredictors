@@ -1,4 +1,4 @@
 -y ../src/blocks
 -y ../src/branch
 
-../src/Pipelined_always_taken.v
+../src/Pipelined_two_bit_predictor.v

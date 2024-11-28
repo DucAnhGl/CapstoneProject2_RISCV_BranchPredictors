@@ -7,6 +7,8 @@
 
 FILES := -f filelist #$(shell cat filelist)
 
+BUILD_PRESIQUITES=$(shell cat filelist | sed 's/-y//g' | sed 's/ //g')
+
 VERILATOR = verilator
 VERILATOR_COV = verilator_coverage
 
@@ -55,8 +57,8 @@ lint:
 	@$(VERILATOR) $(LINT_FLAGS) $(FILES)
 
 .PHONY: build
-build: ./obj_dir/Vtop
-./obj_dir/Vtop: ../tb/tb_top.cpp ../tb/top.sv
+build: #./obj_dir/Vtop
+#./obj_dir/Vtop: #../tb/tb_top.cpp ../tb/top.sv
 	@echo "<>---------------- BUILD ----------------"
 	@$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT) --exe ../tb/tb_top.cpp
 
