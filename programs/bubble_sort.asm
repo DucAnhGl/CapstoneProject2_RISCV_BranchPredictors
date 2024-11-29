@@ -85,5 +85,10 @@ next_inner:
     bnez s0, outer_loop    # Continue outer loop if s0 != 0
 
 # Infinite loop to "exit" the program
-end:
-    j end                  # Jump to itself, creating an infinite loop
+nop
+nop
+nop
+nop
+nop
+#end:
+#    j end                  # Jump to itself, creating an infinite loop

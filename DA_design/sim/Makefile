@@ -57,7 +57,7 @@ lint:
 	@$(VERILATOR) $(LINT_FLAGS) $(FILES)
 
 .PHONY: build
-build: #./obj_dir/Vtop
+build: InstructionMem.mem #./obj_dir/Vtop 
 #./obj_dir/Vtop: #../tb/tb_top.cpp ../tb/top.sv
 	@echo "<>---------------- BUILD ----------------"
 	@$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT) --exe ../tb/tb_top.cpp
@@ -85,6 +85,6 @@ all:
 
 .PHONY: hex
 hex:
-	riscv32-unknown-elf-as -o test/out.o ../../programs/test_program.asm
+	riscv32-unknown-elf-as -o test/out.o ../../programs/bubble_sort.asm
 	riscv32-unknown-elf-objcopy -O verilog test/out.o InstructionMem.mem
 	riscv32-unknown-elf-objdump -d test/out.o > test/output.asm

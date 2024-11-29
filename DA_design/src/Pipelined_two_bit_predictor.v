@@ -1,7 +1,8 @@
 module Pipelined_two_bit_predictor (
-    input clk_i,
-    input rst_i
+    input  clk_i,
+    input  rst_i
 );
+
     //Local params
     localparam INDEX_WIDTH = 12;
 

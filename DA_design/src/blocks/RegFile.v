@@ -55,7 +55,7 @@ module RegFile (
     end
 
     // Output pins with forwarding network
-    assign ReadData1_o = (RegWrEn_i && (WriteReg_i == ReadReg1_i)) ? WriteData_i : Registers[ReadReg1_i];
-    assign ReadData2_o = (RegWrEn_i && (WriteReg_i == ReadReg2_i)) ? WriteData_i : Registers[ReadReg2_i];
+    assign ReadData1_o = ( RegWrEn_i && (WriteReg_i == ReadReg1_i) && (!(WriteReg_i==5'b0_0000))) ? WriteData_i : Registers[ReadReg1_i];
+    assign ReadData2_o = ( RegWrEn_i && (WriteReg_i == ReadReg2_i) && (!(WriteReg_i==5'b0_0000))) ? WriteData_i : Registers[ReadReg2_i];
 
 endmodule
