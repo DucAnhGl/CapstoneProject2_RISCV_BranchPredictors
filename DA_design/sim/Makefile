@@ -85,6 +85,6 @@ all:
 
 .PHONY: hex
 hex:
-	riscv32-unknown-elf-as -o test/out.o ../../programs/bubble_sort.asm
+	riscv32-unknown-elf-as -o test/out.o ../../programs/delay_function.asm
 	riscv32-unknown-elf-objcopy -O verilog test/out.o InstructionMem.mem
 	riscv32-unknown-elf-objdump -d test/out.o > test/output.asm

@@ -14,6 +14,11 @@ module top
   //   .rst_i (rst_i)
   // );
 
+  // assign br_misses = Pipelined_always_taken_inst.IF_flush;
+  // assign br_instr  = Pipelined_always_taken_inst.EX_is_jmp;
+  // assign instr     = Pipelined_always_taken_inst.IF_Instr;
+
+
   Pipelined_two_bit_predictor Pipelined_two_bit_predictor_inst (
     .clk_i (clk_i),
     .rst_i (rst_i)

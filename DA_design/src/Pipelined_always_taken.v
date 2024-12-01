@@ -1,3 +1,5 @@
+/* verilator lint_off UNUSED */
+
 module Pipelined_always_taken (
     input clk_i,
     input rst_i
@@ -13,7 +15,7 @@ module Pipelined_always_taken (
     reg  [1:0] ID_ALU_B_Src_true, ID_ALUOp_true;
 
     ///// EX stage
-    reg       IDEX_ALU_A_Src, IDEX_MemWrEn, IDEX_MemRdEn, IDEX_RegWrEn, IDEX_WB_Src, IDEX_BrEn, IDEX_UncBr; 
+    reg       IDEX_ALU_A_Src, IDEX_MemWrEn, IDEX_MemRdEn, IDEX_RegWrEn, IDEX_WB_Src, IDEX_BrEn, IDEX_UncBr, IDEX_BrBase; 
     reg [1:0] IDEX_ALU_B_Src, IDEX_ALUOp;
 
     ///// MEM stage
@@ -118,7 +120,9 @@ module Pipelined_always_taken (
         .EXMEM_btb_wr_target_i (IDEX_BrAddr),
         .EXMEM_btb_hit_i       (IDEX_btb_hit),    
         .EXMEM_br_decision_i   (IDEX_True_Br_Decision),
-        .EXMEM_is_jmp_i        (EX_is_jmp),  
+        //.EXMEM_is_jmp_i        (EX_is_jmp),
+        .EXMEM_is_br_i         (IDEX_BrEn),
+        .EXMEM_is_uncbr_i      ({IDEX_UncBr, IDEX_BrBase}),  
         
         .IF_btb_hit_o          (IF_btb_hit),        
         .IF_PCnext_sel_o       (IF_PCnext_sel),       
@@ -326,6 +330,7 @@ module Pipelined_always_taken (
         if (rst_i) begin
             IDEX_BrEn      <= 1'b0;
             IDEX_UncBr     <= 1'b0;
+            IDEX_BrBase    <= 1'b0;
             IDEX_ALU_A_Src <= 1'b0;
             IDEX_ALU_B_Src <= 2'b00;
             IDEX_ALUOp     <= 2'b00;
@@ -337,6 +342,7 @@ module Pipelined_always_taken (
             if (IF_IDEXFlush) begin
                 IDEX_BrEn      <= 1'b0;
                 IDEX_UncBr     <= 1'b0;
+                IDEX_BrBase    <= 1'b0;
                 IDEX_ALU_A_Src <= 1'b0;
                 IDEX_ALU_B_Src <= 2'b00;
                 IDEX_ALUOp     <= 2'b00;
@@ -347,6 +353,7 @@ module Pipelined_always_taken (
             end else begin
                 IDEX_BrEn      <= ID_BrEn_true;
                 IDEX_UncBr     <= ID_UncBr_true;
+                IDEX_BrBase    <= ID_BrBase;
                 IDEX_ALU_A_Src <= ID_ALU_A_Src_true;
                 IDEX_ALU_B_Src <= ID_ALU_B_Src_true;
                 IDEX_ALUOp     <= ID_ALUOp_true;
@@ -391,7 +398,7 @@ module Pipelined_always_taken (
 
     assign EX_MemWrData = EX_frwB_mux_out;
 
-    assign EX_is_jmp = IDEX_BrEn | IDEX_UncBr; 
+    assign EX_is_jmp = IDEX_BrEn | (IDEX_UncBr & (!IDEX_BrBase));
 
     assign IDEX_True_Br_Decision = IDEX_UncBr | (IDEX_BrEn & IDEX_flag); // Branch decision logic
 

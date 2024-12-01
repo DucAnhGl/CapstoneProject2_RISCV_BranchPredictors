@@ -33,7 +33,7 @@ int main(int argc, char** argv, char** env) {
     dut->trace(m_trace, 4);
     m_trace->open("wave.fst");
 
-    while ((dut->instr != 0) && (sim_time < MAX_SIM_TIME)) {
+    while (/*(dut->instr != 0) &&*/ (sim_time < MAX_SIM_TIME)) {
         dut_reset(dut, sim_time);         // Call reset function
         dut->clk_i ^= 1;
         dut->eval();

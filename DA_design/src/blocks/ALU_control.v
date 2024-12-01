@@ -18,12 +18,23 @@ module ALU_control (
 				else if ( (Funct3_i==3'b101) && (Funct7_i==7'b0100000) ) ALUCtrl_o = 4'b0101; // Sra
 				else if ( (Funct3_i==3'b110) && (Funct7_i==7'b0000000) ) ALUCtrl_o = 4'b0110; // Or
 				else if ( (Funct3_i==3'b111) && (Funct7_i==7'b0000000) ) ALUCtrl_o = 4'b0111; // And
+				else                                                     ALUCtrl_o = 4'b0111;
 			end
 
 			2'b01:   ALUCtrl_o = 4'b0000; // Load-Store: Add
 			2'b10:   ALUCtrl_o = 4'b1000; // LUI: out OperandB
-			default: ALUCtrl_o = 4'b0000; 
+			2'b11:   begin                // Immediate arithmetic-logic operations
+				     if ( (Funct3_i==3'b000) ) ALUCtrl_o = 4'b0000; // Add
 
+				else if ( (Funct3_i==3'b001) ) ALUCtrl_o = 4'b0010; // Sll
+				else if ( (Funct3_i==3'b100) ) ALUCtrl_o = 4'b0011; // Xor
+				else if ( (Funct3_i==3'b101) ) ALUCtrl_o = 4'b0100; // Srl
+				else if ( (Funct3_i==3'b101) ) ALUCtrl_o = 4'b0101; // Sra
+				else if ( (Funct3_i==3'b110) ) ALUCtrl_o = 4'b0110; // Or
+				else if ( (Funct3_i==3'b111) ) ALUCtrl_o = 4'b0111; // And
+				else                           ALUCtrl_o = 4'b0000;
+			end
+			default: ALUCtrl_o = 4'b0000; 
 		endcase
 	end
 

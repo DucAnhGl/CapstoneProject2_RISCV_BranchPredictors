@@ -26,7 +26,7 @@ module ControlUnit (
             end
 
             Imm_A_L: begin
-               ALUOp_o = 2'b00; ALU_A_Src_o = 1'b0; ALU_B_Src_o = 2'b01; BrBase_o = 1'b0; BrEn_o = 1'b0; UncBr_o = 1'b0;
+               ALUOp_o = 2'b11; ALU_A_Src_o = 1'b0; ALU_B_Src_o = 2'b01; BrBase_o = 1'b0; BrEn_o = 1'b0; UncBr_o = 1'b0;
                MemWrEn_o = 1'b0; MemRdEn_o = 1'b0; WB_Src_o = 1'b0; RegWrEn_o = 1'b1; 
             end
 
