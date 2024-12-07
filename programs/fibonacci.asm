@@ -7,7 +7,7 @@ _start:
     # Loop until we reach the nth Fibonacci number
 fibonacci_loop:
     beqz a0, end        # If n == 0, exit the loop and result is in t0
-    beq a0, t3, end      # If n == 1, exit the loop and result is in t1
+    beq a0, t3, end     # If n == 1, exit the loop and result is in t1
 
     add t2, t0, t1      # t2 = t0 + t1 (fib(n) = fib(n-1) + fib(n-2))
     mv t0, t1           # Move fib(n-1) to fib(n-2) position (t0 = t1)
@@ -20,4 +20,10 @@ end:
 
     # Exit program (simulate exit in bare-metal by looping indefinitely)
 halt:
-    j halt              # Infinite loop to end the program
+nop
+nop
+nop
+nop
+nop
+
+#    j halt              # Infinite loop to end the program

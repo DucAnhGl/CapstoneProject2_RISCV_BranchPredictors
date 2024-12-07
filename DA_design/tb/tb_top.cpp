@@ -9,7 +9,7 @@
 #include <verilated_fst_c.h>
 #include "Vtop.h"
 
-#define MAX_SIM_TIME 3000
+#define MAX_SIM_TIME 5000
 vluint64_t sim_time = 0;
 
 vluint64_t br_instr_counter = 0;
@@ -33,7 +33,7 @@ int main(int argc, char** argv, char** env) {
     dut->trace(m_trace, 4);
     m_trace->open("wave.fst");
 
-    while (/*(dut->instr != 0) &&*/ (sim_time < MAX_SIM_TIME)) {
+    while ((dut->instr != 0) && (sim_time < MAX_SIM_TIME)) {
         dut_reset(dut, sim_time);         // Call reset function
         dut->clk_i ^= 1;
         dut->eval();
@@ -41,7 +41,6 @@ int main(int argc, char** argv, char** env) {
 
         //counting values update at every posedge clk:
         if (dut->clk_i == 1) {
-            sim_cycle = sim_cycle + 1;
 
         // Check instruction is a branch and increment counter
         if (dut->br_instr == 1) br_instr_counter++;

@@ -28,4 +28,13 @@ module top
   assign br_instr  = Pipelined_two_bit_predictor_inst.EX_is_jmp;
   assign instr     = Pipelined_two_bit_predictor_inst.IF_Instr;
 
+  // Pipelined_gshare_predictor Pipelined_gshare_predictor_inst (
+  //   .clk_i (clk_i),
+  //   .rst_i (rst_i)
+  // );
+
+  // assign br_misses = Pipelined_gshare_predictor_inst.IF_flush;
+  // assign br_instr  = Pipelined_gshare_predictor_inst.EX_is_jmp;
+  // assign instr     = Pipelined_gshare_predictor_inst.IF_Instr;
+
 endmodule : top

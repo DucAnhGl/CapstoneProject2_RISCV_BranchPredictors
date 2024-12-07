@@ -5,7 +5,7 @@ loop:
     jal  x1, delay_1s
 
     li   x2, 0xFFFF0000
-    jal  x1, delay_1s
+    jal  x5, delay_1s
 
     addi x3, x3, -1
     beq  x3, x0, exit
@@ -20,4 +20,8 @@ delay_loop:
     jalr x0,x1,0                # Return from the function
 
 exit:
-    j exit
+    nop
+    nop
+    nop
+    nop
+    nop

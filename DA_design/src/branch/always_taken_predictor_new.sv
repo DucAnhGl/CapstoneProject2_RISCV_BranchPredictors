@@ -14,7 +14,7 @@ module always_taken_predictor #(
     input logic [31:0]                   EXMEM_btb_wr_target_i,    // New target PC to write to btb
     input logic                          EXMEM_btb_hit_i,          // Whether there was a hit in the btb 
     input logic                          EXMEM_br_decision_i,      // Branch decision in the branch commit stage
-    input logic                          EXMEM_is_br_i,            // Whether the instruction is a branch
+    input logic                          EXMEM_is_br_i,            // Whether the instruction is a conditional branch
     input logic [1:0]                    EXMEM_is_uncbr_i,         // Whether the instruction is an unconditional branch:
                                                                    //   2'b10: JAL; 2'b11: JALR 
     
@@ -26,6 +26,14 @@ module always_taken_predictor #(
     output logic                         IF_flush_o                // Flush signal for penalty when prediction is wrong
 );
 
+    localparam IS_JAL              = 2'b10;
+    localparam IS_JALR             = 2'b11;
+    localparam IS_BR               = 1'b1;
+    localparam IS_NOT_BR           = 1'b0;     
+    localparam BTB_HIT             = 1'b1;
+    localparam BTB_MISS            = 1'b0;
+    localparam DECISION_BRANCH     = 1'b1;
+    localparam DECISION_NOT_BRANCH = 1'b0;
 
     logic btb_wren;
     logic btb_valid;
@@ -54,38 +62,37 @@ module always_taken_predictor #(
 
     //Next PC selection decoder: 
     always @(*) begin
-        if (EXMEM_is_uncbr_i == 2'b11) begin                                // check if instruction was a JALR
-            IF_PCnext_sel_o = 2'b11;                                        // Recover to calculated target
-            IF_flush_o      = 1'b1;
-        end else if (EXMEM_is_br_i || (EXMEM_is_uncbr_i == 2'b10)) begin    // check if instruction was conditional branch or JAL
-            case ({EXMEM_btb_hit_i, EXMEM_br_decision_i})                   // check if prediction was correct: Query btb to predict
-                2'b00, 2'b11: begin                                         // prediction was correct
-                    if (IF_btb_hit_o) begin                                 // If it's a hit in btb
-                        IF_PCnext_sel_o = 2'b10;                            // take stored target as next PC
-                        IF_flush_o      = 1'b0;
-                    end else begin
-                        IF_PCnext_sel_o = 2'b00;                            // If it's a miss in btb, take PC+4 as next address
-                        IF_flush_o      = 1'b0;
-                    end
-                end
-                2'b10: begin                                                // predicted branch, but actually not branch
-                    IF_PCnext_sel_o = 2'b01;                                // recover to PCplus4
-                    IF_flush_o      = 1'b1;
-                end
-                2'b01: begin                                                // predicted not branch, but actually branch
-                    IF_PCnext_sel_o = 2'b11;                                // recover to correct branch target
-                    IF_flush_o      = 1'b1;
-                end
-            endcase
-        end else begin //if (!(EXMEM_is_br_i || (EXMEM_is_uncbr_i == 2'b10))) begin // if instruction was not a conditional branch or JAL: query BTB
-            if (IF_btb_hit_o) begin                                         // If it's a hit in btb
-                IF_PCnext_sel_o = 2'b10;                                    // take stored target as next PC
-                IF_flush_o      = 1'b0;
-            end else begin
-                IF_PCnext_sel_o = 2'b00;                                    // If it's a miss in btb, take PC+4 as next address
-                IF_flush_o      = 1'b0;
+        case ({EXMEM_is_br_i, EXMEM_is_uncbr_i})
+            {IS_NOT_BR, IS_JALR}: begin
+                IF_PCnext_sel_o = 2'b11;
+                IF_flush_o      = 1'b1;
             end
-        end
+            {IS_BR, IS_NOT_JAL}, {IS_NOT_BR, IS_JAL}: begin
+                case ({EXMEM_btb_hit_i, EXMEM_br_decision_i})
+                    {BTB_HIT, DECISION_BRANCH}, {BTB_MISS, DECISION_NOT_BRANCH}: begin
+                        case (IF_btb_hit_o)
+                            BTB_HIT: begin
+                                IF_PCnext_sel_o = 2'b10;
+                                IF_flush_o      = 1'b0;
+                            end
+                            BTB_MISS: begin
+                                IF_PCnext_sel_o = 2'b00;
+                                IF_flush_o      = 1'b0;
+                            end
+                        endcase
+                    end
+                    {BTB_MISS, DECISION_BRANCH}: begin
+                        IF_PCnext_sel_o = 2'b11;
+                        IF_flush_o      = 1'b1;
+                    end
+                    {BTB_HIT, DECISION_NOT_BRANCH}: begin
+                        IF_PCnext_sel_o = 2'b01;
+                        IF_flush_o      = 1'b1;
+                    end
+                endcase
+            end 
+            default: 
+        endcase
     end
     
 endmodule
